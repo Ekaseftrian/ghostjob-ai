@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from 'next-themes';
+import Link from 'next/link';
 import { useLanguage } from '@/components/Providers';
-import { ShieldAlert, Activity, ShieldCheck, AlertTriangle, Moon, Sun, Globe } from 'lucide-react';
+import { Footer } from '@/components/Footer';
+import { ShieldAlert, Activity, ShieldCheck, AlertTriangle, Moon, Sun, Globe, RefreshCw } from 'lucide-react';
 
 interface AnalysisResult {
   job_title: string;
@@ -122,6 +124,7 @@ export default function GhostJobPage() {
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [autoPlayIndex, setAutoPlayIndex] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -222,7 +225,7 @@ export default function GhostJobPage() {
     }, 1500);
 
     return () => clearTimeout(timeout);
-  }, [jobPosting, mounted, isAutoPlaying, language]);
+  }, [jobPosting, mounted, isAutoPlaying, language, retryCount]);
 
   return (
     <div className="font-body-md min-h-screen flex flex-col relative overflow-x-hidden">
@@ -238,8 +241,9 @@ export default function GhostJobPage() {
             
             <div className="hidden md:flex items-center gap-8 font-mono-label text-mono-label">
                 <a className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="#scanner-section">Analyzer</a>
-                <a className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="#">Forensics</a>
-                <a className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="#">Docs</a>
+                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Forensics</Link>
+                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/docs">Docs</Link>
+                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/live">Live Status</Link>
             </div>
 
             <div className="flex items-center gap-4">
@@ -315,9 +319,9 @@ export default function GhostJobPage() {
                         <p className="font-body-md text-body-md text-on-surface-variant max-w-xl">
                             {language === 'id' ? 'Pasar kerja modern tercemar oleh lowongan fiktif, jebakan pencurian identitas, dan penipuan canggih. Gunakan telemetri kami untuk memvalidasi lowongan sebelum melamar.' : 'The modern job market is polluted with phantom listings, identity harvesting traps, and sophisticated scams. Deploy advanced telemetry to validate opportunities before you engage.'}
                         </p>
-                        <a href="#scanner-section" className="bg-primary text-[#000000] font-headline-sm text-headline-sm px-8 py-4 rounded hover:bg-primary-fixed transition-colors active:scale-95 glow-cyan-active inline-flex items-center gap-2 transition-all">
+                        <Link href="/forensics" className="bg-primary text-[#000000] font-headline-sm text-headline-sm px-8 py-4 rounded hover:bg-primary-fixed transition-colors active:scale-95 glow-cyan-active inline-flex items-center gap-2 transition-all">
                             {language === 'id' ? 'Analisis Ancaman Sekarang' : 'Analyze Threat Now'}
-                        </a>
+                        </Link>
                     </div>
 
                     {/* Dashboard Mockup */}
@@ -358,7 +362,7 @@ export default function GhostJobPage() {
                         </div>
 
                         {/* Telemetry Data */}
-                        <div className="bg-[#020617] rounded p-4 border border-outline-variant font-mono-data text-[12px] text-on-surface-variant h-32 overflow-hidden relative">
+                        <div className="bg-surface-container dark:bg-[#020617] rounded p-4 border border-outline-variant font-mono-data text-[12px] text-on-surface-variant h-32 overflow-hidden relative">
                             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#020617] pointer-events-none z-10"></div>
                             <div className="space-y-2 opacity-90 font-mono flex flex-col">
                                 <p className="text-primary">&gt; [SYS] Initiating linguistic analysis...</p>
@@ -422,9 +426,19 @@ export default function GhostJobPage() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-outline-variant border border-outline-variant rounded-xl overflow-hidden shadow-2xl min-h-[500px]">
                         {/* Left Pane: Input */}
-                        <div className="bg-[#020617] dark:bg-surface-container-lowest p-6 flex flex-col">
+                        <div className="bg-surface lg:dark:bg-transparent dark:bg-surface-container-lowest p-6 flex flex-col">
                             <div className="flex justify-between items-center mb-4 shrink-0">
-                                <span className="font-mono-label text-xs tracking-widest font-bold text-primary">INPUT_BUFFER</span>
+                                <span className="font-mono-label text-xs tracking-widest font-bold text-primary flex items-center gap-4">
+                                    INPUT_BUFFER
+                                    {jobPosting && !isAutoPlaying && (
+                                        <button 
+                                            onClick={() => { setJobPosting(''); setResult(null); setError(''); }}
+                                            className="text-[10px] text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 uppercase"
+                                        >
+                                            <RefreshCw className="w-3 h-3" /> SCAN NEW
+                                        </button>
+                                    )}
+                                </span>
                                 <div className="flex gap-2">
                                     <span className="w-3 h-3 rounded-full border border-outline-variant bg-outline-variant/30 animate-pulse"></span>
                                     <span className="w-3 h-3 rounded-full border border-outline-variant"></span>
@@ -432,7 +446,7 @@ export default function GhostJobPage() {
                             </div>
                             
                             <textarea 
-                                className="flex-grow min-h-[300px] lg:min-h-0 bg-[#0b1326] dark:bg-surface-container border border-outline-variant rounded p-4 font-mono-data text-sm text-[rgba(255,255,255,0.9)] dark:text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all resize-none shadow-inner" 
+                                className="flex-grow min-h-[300px] lg:min-h-0 bg-surface-container dark:bg-[#0b1326] border border-outline-variant rounded p-4 font-mono-data text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all resize-none shadow-inner" 
                                 placeholder={t('inputPlaceholder')}
                                 value={jobPosting}
                                 onChange={(e) => {
@@ -443,8 +457,16 @@ export default function GhostJobPage() {
                             />
                             
                             {error && (
-                                <div className="mt-4 p-3 bg-error-container text-error text-sm font-mono rounded border border-error/50">
-                                    [ERR] {error}
+                                <div className="mt-4 p-3 bg-error-container text-error text-sm font-mono rounded border border-error/50 flex justify-between items-start gap-4">
+                                    <span>[ERR] {error}</span>
+                                    {!isAutoPlaying && (
+                                        <button 
+                                            onClick={() => setRetryCount(act => act + 1)}
+                                            className="uppercase text-[10px] border border-error text-error hover:bg-error/10 px-2 py-1 rounded whitespace-nowrap transition-colors"
+                                        >
+                                            Retry
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -481,7 +503,17 @@ export default function GhostJobPage() {
                             </div>
                             
                             <div className="flex justify-between items-center mb-8 border-b border-outline-variant pb-2 relative z-10">
-                                <span className="font-mono-label text-xs tracking-widest font-bold text-on-surface-variant">ANALYSIS_OUTPUT</span>
+                                <div className="flex items-center gap-4">
+                                    <span className="font-mono-label text-xs tracking-widest font-bold text-on-surface-variant">ANALYSIS_OUTPUT</span>
+                                    {result && (
+                                        <button 
+                                            onClick={() => { setJobPosting(''); setResult(null); setError(''); }}
+                                            className="text-primary hover:bg-primary/10 transition-colors font-mono text-[10px] uppercase font-bold flex items-center gap-1 border border-primary/50 hover:border-primary px-3 py-1 rounded"
+                                        >
+                                            <RefreshCw className="w-3 h-3" /> SCAN NEW
+                                        </button>
+                                    )}
+                                </div>
                                 <span className="font-mono-data text-xs text-on-surface-variant">ID: {result ? `${(result.scam_probability * 7) % 1000}X-ALPHA` : 'WAITING'}</span>
                             </div>
 
@@ -516,7 +548,7 @@ export default function GhostJobPage() {
                                         className="space-y-6 relative z-10 flex-1"
                                     >
                                         {/* Threat Level */}
-                                        <div className="bg-[#020617] dark:bg-surface border border-tertiary/30 p-4 rounded">
+                                        <div className="bg-surface dark:bg-[#020617] border border-tertiary/30 p-4 rounded">
                                             <div className="font-mono-label text-xs font-bold text-on-surface-variant mb-2">SCAM PROBABILITY</div>
                                             <div className="flex items-end gap-4">
                                                 <span className={`font-display-lg text-4xl font-bold leading-none ${result.scam_probability > 70 ? 'text-error' : result.scam_probability > 40 ? 'text-tertiary' : 'text-secondary'}`}>
@@ -534,11 +566,11 @@ export default function GhostJobPage() {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-[#020617] dark:bg-surface border border-outline-variant p-4 rounded flex flex-col">
+                                            <div className="bg-surface dark:bg-[#020617] border border-outline-variant p-4 rounded flex flex-col">
                                                 <span className="font-mono text-[10px] text-on-surface-variant mb-1">CLASSIFICATION</span>
                                                 <span className="font-bold text-sm text-on-surface">{result.threat_classification}</span>
                                             </div>
-                                            <div className="bg-[#020617] dark:bg-surface border border-outline-variant p-4 rounded flex flex-col">
+                                            <div className="bg-surface dark:bg-[#020617] border border-outline-variant p-4 rounded flex flex-col">
                                                 <span className="font-mono text-[10px] text-on-surface-variant mb-1">TRUST SCORE</span>
                                                 <span className="font-bold text-sm text-on-surface">{result.trust_score}/100</span>
                                             </div>
@@ -592,19 +624,7 @@ export default function GhostJobPage() {
             </section>
         </main>
 
-        <footer className="bg-surface-container-lowest text-primary font-body-sm font-headline-sm border-t border-outline-variant w-full px-margin-desktop py-12 flex flex-col md:flex-row justify-between items-center gap-gutter relative z-10">
-            <div className="flex flex-col items-center md:items-start gap-2">
-                <span className="font-headline-sm text-lg font-bold">GhostJob AI</span>
-                <span className="font-mono-data text-xs text-on-surface-variant">© 2026 GHOSTJOB AI // NEURAL DEFENSE ENGINE</span>
-                <span className="font-mono-data text-[10px] text-outline">Job seeker defense system built securely on Gemini 3.1.</span>
-            </div>
-            
-            <div className="flex gap-6 font-mono-label text-sm text-on-surface-variant">
-                <a className="hover:text-secondary transition-all" href="#">Privacy Protocol</a>
-                <a className="hover:text-secondary transition-all" href="#">Terminal Terms</a>
-                <a className="hover:text-secondary transition-all" href="#">API Docs</a>
-            </div>
-        </footer>
+        <Footer />
     </div>
   );
 }

@@ -45,17 +45,17 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const { jobPosting, language } = await req.json();
+    const { jobPosting, imageBase64, language } = await req.json();
 
-    if (!jobPosting || typeof jobPosting !== 'string') {
-      return NextResponse.json({ error: 'Job posting is required and must be a string.' }, { status: 400 });
+    if (!jobPosting && !imageBase64) {
+      return NextResponse.json({ error: 'Input text, link, or image is required.' }, { status: 400 });
     }
 
     const langInstruction = language === 'id' ? 'Provide the analysis and all output strings in Indonesian language.' : 'Provide the analysis and all output strings in English language.';
 
-    const prompt = `You are GhostJob AI, an advanced AI-powered recruitment threat intelligence system.
+    const promptText = `You are GhostJob AI, an advanced AI-powered recruitment threat intelligence system.
 
-Your purpose is to analyze job postings, recruiter messages, and hiring-related content to identify:
+Your purpose is to analyze job postings, recruiter messages, URLs, screenshots, and hiring-related content to identify:
 - recruitment scams
 - fake companies
 - exploitative work conditions
@@ -64,7 +64,9 @@ Your purpose is to analyze job postings, recruiter messages, and hiring-related 
 - unrealistic salaries or requirements
 - psychological manipulation tactics
 
-Analyze the provided content carefully and objectively.
+Analyze the provided content carefully and objectively. 
+If analyzing an image/screenshot, extract the text and visual context first.
+If analyzing a URL/Link string, deduce if the domain name or URL structure looks like legitimate company hostnames or if it uses suspicious phishing patterns.
 
 ${langInstruction}
 
@@ -126,20 +128,33 @@ Behavior Guidelines:
 - Avoid sensationalism
 - Provide realistic and actionable recommendations
 
-Scoring Logic:
-- High scam probability should correlate with low trust score
-- Legitimate postings should contain positive signals
-- Manipulation tactics should only appear if evidence exists
-- Transparency analysis should evaluate company clarity, contact methods, and hiring legitimacy
-
-Job Posting:
+Job Posting Text / URL Input:
 """
-${jobPosting}
+${jobPosting || "No text provided. Analyze the image."}
 """`;
+
+    // Process part data depending on whether there's an image
+    const requestParts: any[] = [
+      { text: promptText }
+    ];
+
+    if (imageBase64) {
+      // Split "data:image/jpeg;base64,...""
+      const parts = imageBase64.split(';');
+      const mimeType = parts[0].split(':')[1];
+      const data = parts[1].split(',')[1];
+      
+      requestParts.push({
+        inlineData: {
+          data,
+          mimeType
+        }
+      });
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.5-flash',
-      contents: prompt,
+      contents: requestParts,
       config: {
         responseMimeType: 'application/json',
         responseSchema: responseSchema,
