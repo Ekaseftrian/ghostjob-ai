@@ -1,0 +1,6 @@
+{
+  "name": "GhostJob AI",
+  "description": "Advanced job threat intelligence system. Analyzes job postings for scams and exploitation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
