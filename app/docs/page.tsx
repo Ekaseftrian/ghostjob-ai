@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useLanguage } from '@/components/Providers';
 import { Footer } from '@/components/Footer';
-import { ShieldAlert, BookOpen, FileText, Code, AlertTriangle, ShieldCheck, CheckCircle, Moon, Sun, Globe, Terminal, Info } from 'lucide-react';
+import { ShieldAlert, BookOpen, FileText, Code, AlertTriangle, ShieldCheck, CheckCircle, Moon, Sun, Globe, Terminal, Info, Ghost, Target } from 'lucide-react';
 
 export default function DocsPage() {
   const { theme, setTheme } = useTheme();
@@ -30,17 +30,18 @@ export default function DocsPage() {
         {/* TopNavBar */}
         <nav className="bg-surface/80 backdrop-blur-md font-headline-sm text-headline-sm text-mono-label border-b border-outline-variant shadow-[0_0_15px_rgba(76,215,246,0.1)] fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop py-4">
             <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center glow-cyan">
-                    <ShieldAlert className="w-5 h-5 text-primary" />
+                <div className="relative w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center glow-cyan border border-primary/30">
+                    <Ghost className="w-4 h-4 text-primary absolute" strokeWidth={2.5}/>
+                    <Target className="w-6 h-6 text-primary/70 animate-pulse absolute" />
                 </div>
                 <span className="font-headline-md text-headline-md font-bold tracking-tighter text-primary">GhostJob AI</span>
             </div>
             
             <div className="hidden md:flex items-center gap-8 font-mono-label text-mono-label">
-                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/">Analyzer</Link>
-                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Forensics</Link>
-                <Link className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="/docs">Docs</Link>
-                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/live">Live Status</Link>
+                <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/">Home</Link>
+                <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Deep Scanner</Link>
+                <Link prefetch={true} className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="/docs">Docs</Link>
+                <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/live">Live Status</Link>
             </div>
 
             <div className="flex items-center gap-4">

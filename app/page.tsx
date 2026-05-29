@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useLanguage } from '@/components/Providers';
 import { Footer } from '@/components/Footer';
-import { ShieldAlert, Activity, ShieldCheck, AlertTriangle, Moon, Sun, Globe, RefreshCw } from 'lucide-react';
+import { ShieldAlert, Activity, ShieldCheck, AlertTriangle, Moon, Sun, Globe, RefreshCw, Ghost, Target } from 'lucide-react';
 
 interface AnalysisResult {
   job_title: string;
@@ -194,6 +194,23 @@ export default function GhostJobPage() {
     setTimeout(() => {
       setResult(demoData);
       setIsAnalyzing(false);
+      
+      try {
+        const newLiveFeedItem = {
+          id: 'uscan-' + Date.now() + Math.random().toString(36).substring(7),
+          timestamp: new Date().toISOString(),
+          type: `USER SCAN: ${demoData.company_name || 'Analyzer Target'}`,
+          description: `Manual scan executed. Verdict: ${demoData.risk_level}. Indicators suggest ${demoData.scam_probability}% compromise probability.`,
+          tag: 'Demo Target',
+          riskScore: demoData.scam_probability,
+          isUserScan: true
+        };
+        const recentUserScansStr = localStorage.getItem('ghostjob_user_scans_v1');
+        const recentUserScans = recentUserScansStr ? JSON.parse(recentUserScansStr) : [];
+        const updatedUserScans = [newLiveFeedItem, ...recentUserScans].slice(0, 5);
+        localStorage.setItem('ghostjob_user_scans_v1', JSON.stringify(updatedUserScans));
+        window.dispatchEvent(new Event('ghostjob-new-user-scan'));
+      } catch(e) {}
     }, 2000);
   };
 
@@ -217,6 +234,23 @@ export default function GhostJobPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Intelligence extraction failed.');
         setResult(data);
+        
+        try {
+          const newLiveFeedItem = {
+            id: 'uscan-' + Date.now() + Math.random().toString(36).substring(7),
+            timestamp: new Date().toISOString(),
+            type: `USER SCAN: ${data.company_name || 'Analyzer Target'}`,
+            description: `Manual scan executed. Verdict: ${data.risk_level}. Indicators suggest ${data.scam_probability}% compromise probability.`,
+            tag: 'User Upload',
+            riskScore: data.scam_probability,
+            isUserScan: true
+          };
+          const recentUserScansStr = localStorage.getItem('ghostjob_user_scans_v1');
+          const recentUserScans = recentUserScansStr ? JSON.parse(recentUserScansStr) : [];
+          const updatedUserScans = [newLiveFeedItem, ...recentUserScans].slice(0, 5);
+          localStorage.setItem('ghostjob_user_scans_v1', JSON.stringify(updatedUserScans));
+          window.dispatchEvent(new Event('ghostjob-new-user-scan'));
+        } catch(e) {}
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -233,17 +267,18 @@ export default function GhostJobPage() {
         {/* TopNavBar */}
         <nav className="bg-surface/80 backdrop-blur-md font-headline-sm text-headline-sm text-mono-label border-b border-outline-variant shadow-[0_0_15px_rgba(76,215,246,0.1)] fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop py-4">
             <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center glow-cyan">
-                    <ShieldAlert className="w-5 h-5 text-primary" />
+                <div className="relative w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center glow-cyan border border-primary/30">
+                    <Ghost className="w-4 h-4 text-primary absolute" strokeWidth={2.5}/>
+                    <Target className="w-6 h-6 text-primary/70 animate-pulse absolute" />
                 </div>
                 <span className="font-headline-md text-headline-md font-bold tracking-tighter text-primary">GhostJob AI</span>
             </div>
             
             <div className="hidden md:flex items-center gap-8 font-mono-label text-mono-label">
-                <a className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="#scanner-section">Analyzer</a>
-                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Forensics</Link>
-                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/docs">Docs</Link>
-                <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/live">Live Status</Link>
+                <a className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="#scanner-section">Home</a>
+                <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Deep Scanner</Link>
+                <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/docs">Docs</Link>
+                <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/live">Live Status</Link>
             </div>
 
             <div className="flex items-center gap-4">
@@ -319,7 +354,7 @@ export default function GhostJobPage() {
                         <p className="font-body-md text-body-md text-on-surface-variant max-w-xl">
                             {language === 'id' ? 'Pasar kerja modern tercemar oleh lowongan fiktif, jebakan pencurian identitas, dan penipuan canggih. Gunakan telemetri kami untuk memvalidasi lowongan sebelum melamar.' : 'The modern job market is polluted with phantom listings, identity harvesting traps, and sophisticated scams. Deploy advanced telemetry to validate opportunities before you engage.'}
                         </p>
-                        <Link href="/forensics" className="bg-primary text-[#000000] font-headline-sm text-headline-sm px-8 py-4 rounded hover:bg-primary-fixed transition-colors active:scale-95 glow-cyan-active inline-flex items-center gap-2 transition-all">
+                        <Link prefetch={true} href="/forensics" className="bg-primary text-[#000000] font-headline-sm text-headline-sm px-8 py-4 rounded hover:bg-primary-fixed transition-colors active:scale-95 glow-cyan-active inline-flex items-center gap-2 transition-all">
                             {language === 'id' ? 'Analisis Ancaman Sekarang' : 'Analyze Threat Now'}
                         </Link>
                     </div>
@@ -545,7 +580,7 @@ export default function GhostJobPage() {
                                     <motion.div 
                                         key="results"
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                        className="space-y-6 relative z-10 flex-1"
+                                        className="space-y-6 relative z-10 flex-1 overflow-y-auto custom-scrollbar pr-2 pb-8"
                                     >
                                         {/* Threat Level */}
                                         <div className="bg-surface dark:bg-[#020617] border border-tertiary/30 p-4 rounded">
@@ -577,11 +612,11 @@ export default function GhostJobPage() {
                                         </div>
 
                                         {/* Red Flags */}
-                                        {result.red_flags.length > 0 && (
+                                        {(result.red_flags || []).length > 0 && (
                                             <div>
                                                 <div className="font-mono-label text-xs font-bold text-on-surface-variant mb-3">IDENTIFIED RED FLAGS</div>
                                                 <ul className="space-y-2">
-                                                    {result.red_flags.map((flag, idx) => (
+                                                    {(result.red_flags || []).map((flag: string, idx: number) => (
                                                         <motion.li 
                                                             initial={{ opacity: 0, x: -10 }}
                                                             animate={{ opacity: 1, x: 0 }}
@@ -597,20 +632,16 @@ export default function GhostJobPage() {
                                             </div>
                                         )}
                                         
-                                        {result.red_flags.length === 0 && (
+                                        {(!result.red_flags || result.red_flags.length === 0) && (
                                             <div className="p-3 bg-secondary/10 border border-secondary/20 rounded text-secondary text-sm font-mono flex items-center gap-2">
                                                 <ShieldCheck className="w-4 h-4" /> NO CRITICAL RED FLAGS DETECTED
                                             </div>
                                         )}
 
-                                        <div className="p-4 bg-surface-container border border-outline-variant rounded border-l-2 border-l-primary/50 text-sm italic text-on-surface-variant">
-                                            &quot;{result.summary}&quot;
-                                        </div>
-
                                         {/* Recommendation */}
                                         <div className={`border rounded p-4 flex justify-between items-center ${result.risk_level === 'Critical' || result.risk_level === 'High' ? 'bg-error/10 border-error/30' : 'bg-secondary/10 border-secondary/30'}`}>
                                             <span className="font-mono-label text-xs font-bold text-on-surface-variant">RECOMMENDED ACTION</span>
-                                            <span className={`font-mono-label text-xs font-bold px-3 py-1 rounded ${result.risk_level === 'Critical' || result.risk_level === 'High' ? 'bg-error text-on-error' : 'bg-secondary text-on-secondary'}`}>
+                                            <span className={`font-mono-label text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${result.risk_level === 'Critical' || result.risk_level === 'High' ? 'bg-error text-on-error' : 'bg-secondary text-on-secondary'}`}>
                                                 {result.recommended_action}
                                             </span>
                                         </div>

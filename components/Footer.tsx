@@ -9,7 +9,7 @@ export function Footer() {
             
             <div className="font-mono-label text-sm text-on-surface-variant flex items-center gap-2">
                 <span className="text-secondary opacity-80">{'<'}</span>
-                Made by Eka Seftrian
+                Built by Eka Seftrian
                 <span className="text-secondary opacity-80">{'>'}</span>
             </div>
         </footer>

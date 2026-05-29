@@ -6,7 +6,8 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useLanguage } from '@/components/Providers';
 import { Footer } from '@/components/Footer';
-import { ShieldAlert, Globe, Activity, AlertTriangle, Monitor, ShieldCheck, Moon, Sun } from 'lucide-react';
+import { ShieldAlert, Globe, Activity, AlertTriangle, Monitor, ShieldCheck, Moon, Sun, Ghost, Target } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface ThreatFeedItem {
     id: string;
@@ -15,6 +16,7 @@ interface ThreatFeedItem {
     description: string;
     tag: string;
     riskScore: number;
+    isUserScan?: boolean;
 }
 
 const initialFeeds: ThreatFeedItem[] = [
@@ -32,23 +34,62 @@ export default function LiveStatusPage() {
     // Live Feed State
     const [feeds, setFeeds] = useState<ThreatFeedItem[]>(initialFeeds);
     
-    const [activityData, setActivityData] = useState<number[]>([]);
+    const [chartData, setChartData] = useState([
+        { time: '00:00', value: 4200 },
+        { time: '06:00', value: 3100 },
+        { time: '12:00', value: 6800 },
+        { time: '18:00', value: 5400 },
+        { time: 'NOW', value: 8900 },
+    ]);
     
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
-        setActivityData(Array.from({length: 12}, () => Math.random() * 80 + 20));
         
+        const handleNewUserScan = () => {
+            try {
+                const stored = localStorage.getItem('ghostjob_user_scans_v1');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.length > 0) {
+                        const latestScan = parsed[0];
+                        
+                        // Prevent adding duplicate if effect reruns
+                        setFeeds(prev => {
+                            if (prev.some(f => f.id === latestScan.id)) return prev;
+                            const newFeedItem: ThreatFeedItem = {
+                                ...latestScan,
+                                timestamp: new Date(latestScan.timestamp)
+                            };
+                            return [newFeedItem, ...prev].slice(0, 15);
+                        });
+                    }
+                }
+            } catch (e) {}
+        };
+        
+        window.addEventListener('ghostjob-new-user-scan', handleNewUserScan);
+        // Initial load of user scans
+        handleNewUserScan();
+
         // Setup mock real-time feed interval
-        const interval = setInterval(() => {
-            if (Math.random() > 0.6) { // 40% chance every 4 seconds to add new feed
-                const threatTypes = ['Identity Harvesting', 'Phishing', 'Payment Scam', 'MLM disguised as Job', 'Ghost Job'];
+        const feedInterval = setInterval(() => {
+            if (Math.random() > 0.65) { // ~35% chance every 7.5 seconds to add new feed
+                const threatTypes = [
+                    'DATA HARVESTING', 
+                    'GHOST JOB DETECTED', 
+                    'FINANCIAL EXPLOITATION', 
+                    'PSYCHOLOGICAL MANIPULATION', 
+                    'IDENTITY THEFT VECTOR',
+                    'SPOOFING SCHEME'
+                ];
                 const descriptions = [
-                    'Suspicious job offering unrealistic compensation ($200k/yr Base) for junior marketing role.',
-                    'Detected fake hiring manager profile circulating fraudulent Google Form links.',
-                    'Job posting requests Social Security Number before first round interview.',
-                    'Company website resolves to recently registered domain with homoglyph tactics.',
-                    'Data harvesting scheme detected under the guise of "Virtual Assistant" roles.'
+                    "Phishing campaign disguised as 'Entry Level Virtual Assistant' targeting regional applicants.",
+                    "Unverified tech entity farming resumes for data-brokering pipelines. Position: Remote Software Intern.",
+                    "Upfront mandatory 'training module fee' required post-interview invitation.",
+                    "Post-midnight rapid interview scheduling using high-pressure urgency tactics.",
+                    "Illegitimate corporate entity requesting government ID before initial screening phase.",
+                    "Sophisticated homoglyph vulnerability used in recruiter email domain spoofing."
                 ];
                 const tags = ['Marketing', 'Remote', 'Sales', 'Design', 'Engineering', 'Finance'];
                 
@@ -68,13 +109,37 @@ export default function LiveStatusPage() {
                 
                 setFeeds(prev => [newFeed, ...prev].slice(0, 15)); // Keep max 15
             }
-        }, 4000);
+        }, 7500);
         
-        return () => clearInterval(interval);
+        const chartInterval = setInterval(() => {
+            setChartData(prevData => {
+                const newData = [...prevData];
+                const lastIdx = newData.length - 1;
+                // Add a random shift to the last data point
+                const shift = (Math.random() - 0.5) * 3000;
+                let newValue = newData[lastIdx].value + shift;
+                if (newValue < 5000) newValue = 5000;
+                if (newValue > 14000) newValue = 14000;
+                newData[lastIdx] = { ...newData[lastIdx], value: Math.floor(newValue) };
+                return newData;
+            });
+        }, 3000);
+        
+        return () => {
+            clearInterval(feedInterval);
+            clearInterval(chartInterval);
+            window.removeEventListener('ghostjob-new-user-scan', handleNewUserScan);
+        };
     }, []);
 
     const toggleTheme = () => {
         setTheme(theme === 'dark' ? 'light' : 'dark');
+    };
+
+    const getRiskColorClasses = (score: number) => {
+        if (score >= 80) return "bg-error/10 border-error/20 text-error";
+        if (score >= 50) return "bg-tertiary/10 border-tertiary/20 text-tertiary";
+        return "bg-secondary/10 border-secondary/20 text-secondary";
     };
 
     const formatTimestamp = (date: Date) => {
@@ -99,17 +164,18 @@ export default function LiveStatusPage() {
             {/* TopNavBar */}
             <nav className="bg-surface/80 backdrop-blur-md font-headline-sm text-headline-sm text-mono-label border-b border-outline-variant shadow-[0_0_15px_rgba(76,215,246,0.1)] fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop py-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center glow-cyan">
-                        <ShieldAlert className="w-5 h-5 text-primary" />
+                    <div className="relative w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center glow-cyan border border-primary/30">
+                        <Ghost className="w-4 h-4 text-primary absolute" strokeWidth={2.5}/>
+                        <Target className="w-6 h-6 text-primary/70 animate-pulse absolute" />
                     </div>
                     <span className="font-headline-md text-headline-md font-bold tracking-tighter text-primary">GhostJob AI</span>
                 </div>
                 
                 <div className="hidden md:flex items-center gap-8 font-mono-label text-mono-label">
-                    <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/">Analyzer</Link>
-                    <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Forensics</Link>
-                    <Link className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/docs">Docs</Link>
-                    <Link className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="/live">Live Status</Link>
+                    <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/">Home</Link>
+                    <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/forensics">Deep Scanner</Link>
+                    <Link prefetch={true} className="text-on-surface-variant hover:text-primary transition-colors hover:bg-primary/10 transition-all duration-200 py-1 px-2 active:scale-95" href="/docs">Docs</Link>
+                    <Link prefetch={true} className="text-primary border-b-2 border-primary pb-1 active:scale-95 transition-transform" href="/live">Live Status</Link>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -205,11 +271,28 @@ export default function LiveStatusPage() {
                                 </div>
                             </div>
                             <div className="mt-auto">
-                                <div className="w-full h-32 bg-surface border border-outline-variant rounded p-3 relative overflow-hidden flex items-end justify-between">
-                                     <div className="absolute top-2 left-2 text-[10px] font-mono text-on-surface-variant">ACTIVITY GRAPH</div>
-                                     {Array.from({length: 12}).map((_, i) => (
-                                         <div key={i} className="w-[6%] bg-primary/20 hover:bg-primary/40 transition-colors" style={{ height: `${activityData[i] || 20}%`}}></div>
-                                     ))}
+                                <div className="w-full h-40 bg-surface border border-outline-variant rounded p-2 pt-6 relative overflow-hidden flex items-end justify-between">
+                                     <div className="absolute top-2 left-2 text-[10px] font-mono text-on-surface-variant z-10 uppercase tracking-widest">ACTIVITY GRAPH</div>
+                                     <div className="absolute inset-0">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={true} horizontal={true} opacity={0.5} />
+                                                <XAxis dataKey="time" stroke="#475569" fontSize={9} fontFamily="monospace" tickLine={false} axisLine={false} dy={5} />
+                                                <YAxis stroke="#475569" fontSize={9} fontFamily="monospace" tickLine={false} axisLine={false} tickFormatter={(val) => `${val / 1000}K`} />
+                                                <Tooltip 
+                                                    contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', fontFamily: 'monospace', fontSize: '12px' }}
+                                                    itemStyle={{ color: '#06b6d4' }}
+                                                />
+                                                <Area type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" isAnimationActive={true} animationDuration={1000} animationEasing="ease-in-out" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                     </div>
                                 </div>
                             </div>
                         </div>
@@ -233,14 +316,16 @@ export default function LiveStatusPage() {
                                         initial={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
                                         animate={{ opacity: 1, x: 0, height: 'auto', marginBottom: 12 }}
                                         exit={{ opacity: 0, x: 20 }}
-                                        className="border border-outline-variant hover:border-primary/50 transition-colors rounded bg-surface-container p-4 font-mono-data text-xs"
+                                        className={`border transition-all rounded bg-surface-container p-4 font-mono-data text-xs relative overflow-hidden ${feed.isUserScan ? 'border-primary ai-pulse' : 'border-outline-variant hover:border-primary/50'}`}
                                     >
+                                        {feed.isUserScan && <div className="absolute top-0 left-0 w-1 h-full bg-primary ai-pulse"></div>}
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-secondary opacity-80">{formatTimestamp(feed.timestamp)}</span>
                                                 <span className="bg-surface-variant px-2 py-0.5 rounded text-on-surface-variant">[{feed.tag}]</span>
+                                                {feed.isUserScan && <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-bold">USER SCANNED</span>}
                                             </div>
-                                            <div className="bg-error/10 border border-error/20 text-error px-2 py-0.5 rounded font-bold">
+                                            <div className={`border px-2 py-0.5 rounded font-bold ${getRiskColorClasses(feed.riskScore)}`}>
                                                 Risk: {feed.riskScore}%
                                             </div>
                                         </div>

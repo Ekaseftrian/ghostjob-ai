@@ -170,6 +170,13 @@ ${jobPosting || "No text provided. Analyze the image."}
 
   } catch (error: any) {
     console.error('GhostJob Analysis error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to analyze posting.' }, { status: 500 });
+    
+    // Provide a more user-friendly error for 503s
+    let errorMessage = error.message || 'Failed to analyze posting.';
+    if (errorMessage.includes('503') || errorMessage.includes('UNAVAILABLE') || errorMessage.includes('high demand')) {
+      errorMessage = 'The AI model is currently experiencing high demand. Please wait a moment and try again.';
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
